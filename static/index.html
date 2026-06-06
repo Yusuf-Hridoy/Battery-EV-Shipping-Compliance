@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BatteryShip — Lithium Battery Shipping Compliance</title>
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        .navbar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: var(--navy); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; z-index: 100; }
+        .navbar .logo { color: white; font-weight: 700; font-size: 20px; }
+        .navbar .nav-actions { display: flex; gap: 10px; }
+        .navbar .btn-outline { color: white; border-color: rgba(255,255,255,0.3); }
+        .navbar .btn-outline:hover { border-color: white; color: white; }
+
+        .hero { background: var(--navy); padding: 140px 24px 100px; text-align: center; }
+        .hero-inner { max-width: 720px; margin: 0 auto; }
+        .hero .badge-amber { margin-bottom: 1rem; }
+        .hero h1 { color: white; font-size: 3rem; margin-bottom: 1rem; }
+        .hero p { color: var(--blue-light); font-size: 1.1rem; max-width: 540px; margin: 0 auto 1.5rem; }
+        .hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+        .hero-proof { color: var(--gray-400); font-size: 13px; margin-top: 1.5rem; }
+
+        .section { padding: 80px 24px; }
+        .section-label { font-size: 13px; font-weight: 600; color: var(--blue); text-transform: uppercase; letter-spacing: 0.05em; text-align: center; margin-bottom: 0.75rem; }
+        .section h2 { text-align: center; margin-bottom: 0.75rem; }
+        .section > p { text-align: center; color: var(--gray-600); max-width: 540px; margin: 0 auto 2.5rem; }
+        .section-white { background: white; }
+        .section-gray { background: var(--gray-50); }
+
+        .cards-row { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; max-width: 1100px; margin: 0 auto; }
+        .card-item { flex: 1; min-width: 260px; max-width: 340px; }
+        .card-item .icon { font-size: 1.75rem; margin-bottom: 0.75rem; }
+        .card-item h3 { margin-bottom: 0.5rem; }
+        .card-item p { color: var(--gray-600); font-size: 14px; margin-bottom: 0; }
+
+        .steps-row { display: flex; gap: 24px; justify-content: center; align-items: flex-start; flex-wrap: wrap; max-width: 1000px; margin: 0 auto; }
+        .step-item { flex: 1; min-width: 240px; max-width: 300px; }
+        .step-num { font-size: 3rem; font-weight: 700; color: var(--blue); opacity: 0.3; line-height: 1; margin-bottom: 0.5rem; }
+        .step-item h3 { margin-bottom: 0.5rem; }
+        .step-item p { color: var(--gray-600); font-size: 14px; margin-bottom: 0; }
+        .step-arrow { font-size: 2rem; color: var(--gray-300); align-self: center; }
+
+        .pricing-row { display: flex; gap: 24px; justify-content: center; align-items: stretch; flex-wrap: wrap; max-width: 1000px; margin: 0 auto; }
+        .pricing-card { flex: 1; min-width: 260px; max-width: 320px; display: flex; flex-direction: column; }
+        .pricing-card .price { font-size: 2rem; font-weight: 700; margin-bottom: 0.25rem; }
+        .pricing-card .tagline { color: var(--gray-400); font-size: 14px; margin-bottom: 1.25rem; }
+        .pricing-card ul { list-style: none; margin-bottom: 1.5rem; flex: 1; }
+        .pricing-card li { padding: 6px 0; font-size: 14px; color: var(--gray-700); }
+        .pricing-card .btn { justify-content: center; }
+        .pricing-highlight { border: 2px solid var(--blue); position: relative; }
+        .popular-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--blue); color: white; font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 999px; }
+
+        .reg-banner { background: var(--amber-light); border-top: 1px solid var(--amber); border-bottom: 1px solid var(--amber); padding: 20px 24px; text-align: center; }
+        .reg-banner a { font-weight: 500; }
+
+        .footer { background: var(--navy); padding: 40px 24px; color: white; }
+        .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; }
+        .footer-left { color: var(--gray-400); font-size: 14px; }
+        .footer-left .logo { color: white; font-weight: 700; font-size: 18px; margin-bottom: 0.25rem; }
+        .footer-right { display: flex; gap: 20px; }
+        .footer-right a { color: var(--gray-400); font-size: 14px; }
+        .footer-right a:hover { color: white; text-decoration: none; }
+        .footer-bottom { text-align: center; color: var(--gray-600); font-size: 12px; margin-top: 2rem; }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; display: none; align-items: center; justify-content: center; padding: 24px; }
+        .modal-overlay.active { display: flex; }
+        .modal-card { background: white; border-radius: var(--radius-lg); max-width: 420px; width: 100%; padding: 1.5rem; position: relative; }
+        .modal-close { position: absolute; top: 12px; right: 16px; font-size: 22px; color: var(--gray-400); cursor: pointer; background: none; border: none; }
+        .modal-tabs { display: flex; gap: 8px; margin-bottom: 1.25rem; }
+        .modal-tab { flex: 1; padding: 8px; text-align: center; font-size: 14px; font-weight: 500; cursor: pointer; border: none; background: none; border-bottom: 2px solid var(--gray-200); }
+        .modal-tab.active { border-bottom-color: var(--blue); color: var(--blue); }
+        .modal-error { color: var(--red); font-size: 13px; margin-top: 0.5rem; display: none; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="logo">⚡ BatteryShip</div>
+    <div class="nav-actions">
+        <button class="btn btn-outline btn-sm hide-mobile" onclick="openModal()">Sign in</button>
+        <button class="btn btn-primary btn-sm" onclick="openModal()">Get started free</button>
+    </div>
+</nav>
+
+<section class="hero">
+    <div class="hero-inner">
+        <div class="badge badge-amber">🔋 2025 IATA DGR rules now included</div>
+        <h1>Ship lithium batteries without the compliance headache</h1>
+        <p>Generate IATA-compliant Shipper's Declarations in 60 seconds. No dangerous goods expertise needed. Always up to date.</p>
+        <div class="hero-actions">
+            <button class="btn btn-white btn-lg" onclick="openModal()">Get started free →</button>
+            <button class="btn btn-outline btn-lg" style="color:white;border-color:rgba(255,255,255,0.4);" onclick="openModal()">See how it works</button>
+        </div>
+        <div class="hero-proof">✓ Free plan available &nbsp; ✓ No credit card required &nbsp; ✓ 2026 IATA rules</div>
+    </div>
+</section>
+
+<section class="section section-white">
+    <div class="section-label">The Problem</div>
+    <h2>Lithium battery shipping is a compliance minefield</h2>
+    <p>Get it wrong and your shipment gets rejected, fined, or destroyed.</p>
+    <div class="cards-row">
+        <div class="card card-item">
+            <div class="icon">❌</div>
+            <h3>Wrong UN number = rejected shipment</h3>
+            <p>There are 8 different UN numbers for lithium batteries. Pick the wrong one and your cargo gets turned away at the carrier.</p>
+        </div>
+        <div class="card card-item">
+            <div class="icon">📋</div>
+            <h3>2025 rules changed everything</h3>
+            <p>E-bikes, e-scooters, and sodium-ion batteries all got new UN codes in 2025. Most shippers don't know yet.</p>
+        </div>
+        <div class="card card-item">
+            <div class="icon">💰</div>
+            <h3>Consultants charge $300+ per document</h3>
+            <p>Dangerous goods specialists are expensive. Small businesses end up guessing — or paying through the nose.</p>
+        </div>
+    </div>
+</section>
+
+<section class="section section-gray">
+    <div class="section-label">How it Works</div>
+    <h2>From battery specs to compliant documents in 3 steps</h2>
+    <div class="steps-row">
+        <div class="step-item">
+            <div class="step-num">01</div>
+            <h3>Tell us about your battery</h3>
+            <p>Enter battery chemistry, watt-hour rating, packaging config, and transport mode. Takes about 60 seconds.</p>
+        </div>
+        <div class="step-arrow hide-mobile">→</div>
+        <div class="step-item">
+            <div class="step-num">02</div>
+            <h3>We classify it automatically</h3>
+            <p>Our classification engine maps your battery to the correct UN number using IATA DGR 2026 rules. No guessing.</p>
+        </div>
+        <div class="step-arrow hide-mobile">→</div>
+        <div class="step-item">
+            <div class="step-num">03</div>
+            <h3>Download your documents</h3>
+            <p>Get a professional Shipper's Declaration PDF ready to sign. Plus AI-powered explanations if you have questions.</p>
+        </div>
+    </div>
+</section>
+
+<section class="section section-white">
+    <div class="section-label">Pricing</div>
+    <h2>Simple, transparent pricing</h2>
+    <p>Start free. Upgrade when you need more.</p>
+    <div class="pricing-row">
+        <div class="card pricing-card">
+            <div class="price">$0<span style="font-size:1rem;color:var(--gray-400);font-weight:400;">/month</span></div>
+            <div class="tagline">For occasional shippers</div>
+            <ul>
+                <li>✓ 3 documents per month</li>
+                <li>✓ UN number classification</li>
+                <li>✓ PDF Shipper's Declaration</li>
+                <li>✓ Regulatory alerts</li>
+                <li style="color:var(--gray-400);">✗ AI explanations</li>
+                <li style="color:var(--gray-400);">✗ API access</li>
+            </ul>
+            <button class="btn btn-outline w-full" onclick="openModal()">Get started free</button>
+        </div>
+        <div class="card pricing-card pricing-highlight">
+            <div class="popular-badge">Most popular</div>
+            <div class="price">$29<span style="font-size:1rem;color:var(--gray-400);font-weight:400;">/month</span></div>
+            <div class="tagline">For growing businesses</div>
+            <ul>
+                <li>✓ 20 documents per month</li>
+                <li>✓ UN number classification</li>
+                <li>✓ PDF Shipper's Declaration</li>
+                <li>✓ Regulatory alerts</li>
+                <li>✓ AI explanations (10/day)</li>
+                <li style="color:var(--gray-400);">✗ API access</li>
+            </ul>
+            <button class="btn btn-primary w-full" onclick="openModal()">Start free trial</button>
+        </div>
+        <div class="card pricing-card">
+            <div class="price">$79<span style="font-size:1rem;color:var(--gray-400);font-weight:400;">/month</span></div>
+            <div class="tagline">For high-volume shippers</div>
+            <ul>
+                <li>✓ Unlimited documents</li>
+                <li>✓ UN number classification</li>
+                <li>✓ PDF Shipper's Declaration</li>
+                <li>✓ Regulatory alerts</li>
+                <li>✓ AI explanations (10/day)</li>
+                <li>✓ API access (coming soon)</li>
+            </ul>
+            <button class="btn btn-outline w-full" onclick="openModal()">Get started</button>
+        </div>
+    </div>
+</section>
+
+<section class="reg-banner">
+    <p>⚠️ 2025 UPDATE: E-bikes, e-scooters, and sodium-ion batteries have new UN numbers. Is your documentation up to date? <a href="/app.html">Check the latest regulations →</a></p>
+</section>
+
+<footer class="footer">
+    <div class="footer-inner">
+        <div class="footer-left">
+            <div class="logo">⚡ BatteryShip</div>
+            <div>Lithium battery shipping compliance.</div>
+        </div>
+        <div class="footer-right">
+            <a href="#" onclick="openModal();return false;">Sign in</a>
+            <a href="#" onclick="openModal();return false;">Get started</a>
+            <a href="/app.html">Regulations</a>
+        </div>
+    </div>
+    <div class="footer-bottom">© 2026 BatteryShip · For guidance only. Always verify with a certified DG specialist.</div>
+</footer>
+
+<div class="modal-overlay" id="authModal" onclick="closeModalOutside(event)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+        <button class="modal-close" onclick="closeModal()">×</button>
+        <div class="modal-tabs">
+            <button class="modal-tab active" id="tab-signin" onclick="switchTab('signin')">Sign in</button>
+            <button class="modal-tab" id="tab-register" onclick="switchTab('register')">Create account</button>
+        </div>
+
+        <form id="form-signin" onsubmit="handleSignin(event)">
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-control" id="si-email" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" class="form-control" id="si-password" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-full">Sign in</button>
+            <div class="modal-error" id="si-error"></div>
+        </form>
+
+        <form id="form-register" class="hidden" onsubmit="handleRegister(event)">
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-control" id="reg-email" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" class="form-control" id="reg-password" minlength="8" required>
+                <div class="form-hint">Minimum 8 characters</div>
+            </div>
+            <button type="submit" class="btn btn-primary w-full">Create free account</button>
+            <div class="modal-error" id="reg-error"></div>
+        </form>
+    </div>
+</div>
+
+<script>
+    if (localStorage.getItem("bs_token")) {
+        window.location.href = "/app.html";
+    }
+
+    function openModal() {
+        document.getElementById("authModal").classList.add("active");
+    }
+    function closeModal() {
+        document.getElementById("authModal").classList.remove("active");
+    }
+    function closeModalOutside(e) {
+        if (e.target === document.getElementById("authModal")) closeModal();
+    }
+    function switchTab(tab) {
+        document.getElementById("tab-signin").classList.toggle("active", tab === "signin");
+        document.getElementById("tab-register").classList.toggle("active", tab === "register");
+        document.getElementById("form-signin").classList.toggle("hidden", tab !== "signin");
+        document.getElementById("form-register").classList.toggle("hidden", tab !== "register");
+        document.getElementById("si-error").style.display = "none";
+        document.getElementById("reg-error").style.display = "none";
+    }
+
+    async function handleSignin(e) {
+        e.preventDefault();
+        const email = document.getElementById("si-email").value;
+        const password = document.getElementById("si-password").value;
+        const errorEl = document.getElementById("si-error");
+        try {
+            const res = await fetch("/api/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                errorEl.textContent = data.detail || "Login failed";
+                errorEl.style.display = "block";
+                return;
+            }
+            localStorage.setItem("bs_token", data.access_token);
+            window.location.href = "/app.html";
+        } catch (err) {
+            errorEl.textContent = "Network error. Please try again.";
+            errorEl.style.display = "block";
+        }
+    }
+
+    async function handleRegister(e) {
+        e.preventDefault();
+        const email = document.getElementById("reg-email").value;
+        const password = document.getElementById("reg-password").value;
+        const errorEl = document.getElementById("reg-error");
+        try {
+            const res = await fetch("/api/auth/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                errorEl.textContent = data.detail || "Registration failed";
+                errorEl.style.display = "block";
+                return;
+            }
+            localStorage.setItem("bs_token", data.access_token);
+            window.location.href = "/app.html";
+        } catch (err) {
+            errorEl.textContent = "Network error. Please try again.";
+            errorEl.style.display = "block";
+        }
+    }
+</script>
+
+</body>
+</html>

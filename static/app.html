@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BatteryShip — App</title>
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        .app-layout { display: flex; min-height: 100vh; }
+        .sidebar {
+            width: 240px; background: var(--navy); color: white;
+            position: fixed; top: 0; bottom: 0; left: 0;
+            display: flex; flex-direction: column; padding: 1.25rem;
+            z-index: 100;
+        }
+        .sidebar-logo { font-weight: 700; font-size: 18px; margin-bottom: 0.25rem; }
+        .sidebar-version { font-size: 11px; color: var(--gray-400); margin-bottom: 2rem; }
+        .sidebar-nav { list-style: none; flex: 1; }
+        .sidebar-nav li { margin-bottom: 4px; }
+        .sidebar-nav a {
+            display: block; padding: 10px 12px; border-radius: var(--radius);
+            color: var(--gray-300); font-size: 14px; text-decoration: none;
+        }
+        .sidebar-nav a:hover, .sidebar-nav a.active {
+            background: rgba(255,255,255,0.1); color: white;
+        }
+        .sidebar-nav a.active {
+            border-left: 3px solid var(--blue); padding-left: 9px;
+        }
+        .sidebar-bottom { margin-top: auto; font-size: 12px; color: var(--gray-400); }
+        .sidebar-bottom a { color: var(--gray-400); text-decoration: none; }
+        .sidebar-bottom a:hover { color: var(--red); }
+
+        .main { margin-left: 240px; flex: 1; padding: 1.5rem 2rem; }
+        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .topbar-title { font-size: 1.25rem; font-weight: 600; }
+        .mobile-toggle { display: none; position: fixed; top: 12px; left: 12px; z-index: 110; background: var(--navy); color: white; border: none; padding: 8px 12px; border-radius: var(--radius); font-size: 18px; }
+
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        .result-panel {
+            opacity: 0; transition: opacity 0.4s ease;
+            margin-top: 1.5rem;
+        }
+        .result-panel.visible { opacity: 1; }
+
+        .un-badge {
+            background: var(--navy); color: white; padding: 16px 24px;
+            border-radius: var(--radius-lg); font-size: 2rem; font-weight: 700;
+            display: inline-block;
+        }
+        .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .details-grid .card-sm { padding: 12px; }
+        .details-grid .label { font-size: 12px; color: var(--gray-400); }
+        .details-grid .value { font-size: 15px; font-weight: 600; }
+
+        .info-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius); padding: 12px 16px; }
+        .req-box { background: var(--amber-light); border: 1px solid var(--amber); border-radius: var(--radius); padding: 12px 16px; margin-top: 0.75rem; }
+        .req-box ul { margin: 0; padding-left: 18px; }
+        .req-box li { font-size: 13px; margin-bottom: 4px; }
+
+        .history-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .history-table th, .history-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--gray-200); }
+        .history-table th { font-weight: 600; color: var(--gray-600); font-size: 12px; text-transform: uppercase; }
+        .history-table tr:hover { background: var(--gray-50); }
+
+        .reg-card { margin-bottom: 1rem; }
+        .reg-card .meta { display: flex; gap: 8px; margin-bottom: 0.5rem; }
+
+        .progress-bar { height: 8px; background: var(--gray-200); border-radius: 999px; overflow: hidden; margin-top: 6px; }
+        .progress-bar .fill { height: 100%; background: var(--blue); border-radius: 999px; }
+
+        .empty-state { text-align: center; padding: 3rem 1rem; color: var(--gray-400); }
+
+        .explanation-panel { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius); padding: 16px; margin-top: 1rem; }
+        .explanation-panel h4 { margin-bottom: 0.5rem; }
+        .explanation-panel .meta { font-size: 12px; color: var(--gray-400); margin-bottom: 0.75rem; }
+
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); transition: transform 0.2s; }
+            .sidebar.open { transform: translateX(0); }
+            .main { margin-left: 0; padding: 1rem; padding-top: 3rem; }
+            .mobile-toggle { display: block; }
+            .topbar { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+            .history-table { display: block; overflow-x: auto; }
+            .details-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
+
+<div class="app-layout">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">⚡ BatteryShip</div>
+        <div class="sidebar-version">v1.0</div>
+        <ul class="sidebar-nav">
+            <li><a href="#" class="active" data-screen="new-shipment" onclick="showScreen('new-shipment');return false;">📦 New Shipment</a></li>
+            <li><a href="#" data-screen="history" onclick="showScreen('history');return false;">📜 History</a></li>
+            <li><a href="#" data-screen="regulations" onclick="showScreen('regulations');return false;">📋 Regulations</a></li>
+            <li><a href="#" data-screen="account" onclick="showScreen('account');return false;">👤 Account</a></li>
+        </ul>
+        <div class="sidebar-bottom">
+            <div id="sidebar-email" style="margin-bottom:6px;word-break:break-all;"></div>
+            <a href="#" onclick="signOut();return false;">Sign out</a>
+        </div>
+    </aside>
+
+    <main class="main">
+        <div class="topbar">
+            <div class="topbar-title" id="page-title">New Shipment Classification</div>
+            <span class="badge badge-blue" id="plan-badge">Free</span>
+        </div>
+
+        <!-- SCREEN 1: New Shipment -->
+        <div class="screen active" id="screen-new-shipment">
+            <p class="text-muted">Enter your battery details to get the correct UN number and documents.</p>
+            <div class="card">
+                <form id="classify-form" onsubmit="handleClassify(event)">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                        <div class="form-group">
+                            <label class="form-label">Battery chemistry</label>
+                            <select class="form-control" id="chemistry" required onchange="toggleLiContent()">
+                                <option value="">Select battery type...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Product type</label>
+                            <select class="form-control" id="product-type" required>
+                                <option value="">Select product type...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Transport mode</label>
+                        <div class="radio-group" id="transport-group"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Packaging configuration</label>
+                        <div class="radio-group" id="packaging-group"></div>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                        <div class="form-group">
+                            <label class="form-label">Watt-hour (Wh) rating</label>
+                            <input type="number" class="form-control" id="wh-rating" placeholder="e.g. 50" step="0.1">
+                            <div class="form-hint">Check battery label or spec sheet. Required for accurate Section I/II determination.</div>
+                        </div>
+                        <div class="form-group hidden" id="li-content-group">
+                            <label class="form-label">Lithium content (g)</label>
+                            <input type="number" class="form-control" id="li-content" placeholder="e.g. 1.5" step="0.1">
+                            <div class="form-hint">Required for Li-metal batteries only.</div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Number of packages</label>
+                        <input type="number" class="form-control" id="quantity" value="1" min="1" max="99999" required>
+                    </div>
+
+                    <div class="alert alert-danger hidden" id="form-error"></div>
+                    <button type="submit" class="btn btn-primary btn-lg w-full" id="classify-btn">
+                        <span id="classify-btn-text">Classify & Generate Documents →</span>
+                        <span class="spinner hidden" id="classify-spinner"></span>
+                    </button>
+                </form>
+            </div>
+
+            <div class="result-panel hidden" id="result-panel">
+                <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;margin-bottom:1rem;">
+                    <div class="un-badge" id="res-un-number">UN3480</div>
+                    <div class="details-grid" style="flex:1;min-width:240px;">
+                        <div class="card card-sm">
+                            <div class="label">Packing Instruction</div>
+                            <div class="value" id="res-pi">PI965</div>
+                        </div>
+                        <div class="card card-sm">
+                            <div class="label">Section</div>
+                            <div class="value" id="res-section">I</div>
+                        </div>
+                        <div class="card card-sm">
+                            <div class="label">Hazard Class</div>
+                            <div class="value" id="res-hazard">Class 9</div>
+                        </div>
+                        <div class="card card-sm">
+                            <div class="label">Transport Mode</div>
+                            <div class="value" id="res-transport">Air freight</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;">
+                    <span class="badge" id="badge-declaration">Declaration Required</span>
+                    <span class="badge" id="badge-un38">UN38.3 Required</span>
+                    <span class="badge" id="badge-confidence">High confidence</span>
+                </div>
+
+                <div class="info-box">
+                    <div class="label">Proper Shipping Name</div>
+                    <div class="value" id="res-proper-name" style="margin-top:4px;">Lithium ion batteries</div>
+                </div>
+
+                <div class="req-box hidden" id="res-requirements">
+                    <div class="label" style="margin-bottom:6px;">Additional Requirements</div>
+                    <ul id="res-req-list"></ul>
+                </div>
+
+                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:1rem;">
+                    <button class="btn btn-primary" id="btn-download" onclick="downloadPDF()">
+                        <span id="dl-text">Download Shipper's Declaration PDF</span>
+                        <span class="spinner hidden" id="dl-spinner"></span>
+                    </button>
+                    <button class="btn btn-outline" id="btn-explain" onclick="fetchExplanation()">
+                        <span id="ex-text">Explain this in plain English</span>
+                        <span class="spinner hidden" id="ex-spinner"></span>
+                    </button>
+                </div>
+
+                <div class="explanation-panel hidden" id="explanation-panel">
+                    <h4>AI Explanation</h4>
+                    <div class="meta" id="ex-meta"></div>
+                    <p id="ex-content"></p>
+                    <div class="divider"></div>
+                    <div style="display:flex;gap:8px;">
+                        <input type="text" class="form-control" id="followup-input" placeholder="e.g. My battery is 105Wh, does that change anything?">
+                        <button class="btn btn-primary" onclick="askFollowup()">Ask</button>
+                    </div>
+                    <p id="followup-answer" style="margin-top:0.75rem;margin-bottom:0;"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCREEN 2: History -->
+        <div class="screen" id="screen-history">
+            <p class="text-muted">Your last 20 shipment classifications.</p>
+            <div id="history-empty" class="empty-state hidden">
+                <div style="font-size:3rem;margin-bottom:1rem;">📦</div>
+                <div>No shipments yet. Create your first classification above.</div>
+            </div>
+            <div id="history-content">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Product</th>
+                            <th>Battery Type</th>
+                            <th>UN Number</th>
+                            <th>Transport</th>
+                            <th>Section</th>
+                            <th>PDF</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SCREEN 3: Regulations -->
+        <div class="screen" id="screen-regulations">
+            <p class="text-muted">Latest changes to lithium battery shipping regulations.</p>
+            <div id="reg-empty" class="alert alert-info hidden">
+                No regulation updates yet. Run /api/documents/regulations/seed in development to add sample data.
+            </div>
+            <div id="reg-list"></div>
+        </div>
+
+        <!-- SCREEN 4: Account -->
+        <div class="screen" id="screen-account">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;max-width:800px;">
+                <div class="card">
+                    <h3>Your Account</h3>
+                    <div class="form-group mt-2">
+                        <div class="form-label">Email</div>
+                        <div id="acc-email"></div>
+                    </div>
+                    <div class="form-group">
+                        <div class="form-label">Plan</div>
+                        <span class="badge" id="acc-plan"></span>
+                    </div>
+                    <div class="form-group">
+                        <div class="form-label">Documents used this month</div>
+                        <div id="acc-usage"></div>
+                        <div class="progress-bar"><div class="fill" id="usage-bar"></div></div>
+                    </div>
+                    <div class="form-group">
+                        <div class="form-label">Member since</div>
+                        <div id="acc-since"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="card hidden" id="upgrade-card">
+                        <h3>Upgrade your plan</h3>
+                        <p class="text-muted">Need more documents? Upgrade to Starter ($29/mo) or Growth ($79/mo) for more capacity.</p>
+                        <a href="mailto:support@batteryship.com?subject=Plan Upgrade" class="btn btn-primary">Upgrade plan</a>
+                    </div>
+                    <div class="card mt-2">
+                        <h3 style="color:var(--red);">Danger Zone</h3>
+                        <p class="text-muted">Sign out of all devices.</p>
+                        <button class="btn btn-outline" onclick="signOut()">Sign out</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    let currentUser = null;
+    let currentShipmentId = null;
+    let currentClassification = null;
+    let options = {};
+
+    const token = localStorage.getItem("bs_token");
+    if (!token) {
+        window.location.href = "/index.html";
+    }
+
+    async function api(path, method = "GET", body = null) {
+        const opts = {
+            method,
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            }
+        };
+        if (body) opts.body = JSON.stringify(body);
+        const res = await fetch("/api" + path, opts);
+        if (res.status === 401) { signOut(); return; }
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({ detail: "Request failed" }));
+            throw new Error(err.detail || "Request failed");
+        }
+        if (res.status === 204) return null;
+        return res.json();
+    }
+
+    function signOut() {
+        localStorage.removeItem("bs_token");
+        window.location.href = "/index.html";
+    }
+
+    function formatDate(isoString) {
+        const d = new Date(isoString);
+        return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    }
+
+    function showScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('screen-' + screenId).classList.add('active');
+        document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+        const nav = document.querySelector('.sidebar-nav a[data-screen="' + screenId + '"]');
+        if (nav) nav.classList.add('active');
+
+        const titles = {
+            'new-shipment': 'New Shipment Classification',
+            'history': 'Shipment History',
+            'regulations': 'Regulatory Updates',
+            'account': 'Your Account'
+        };
+        document.getElementById('page-title').textContent = titles[screenId];
+        document.getElementById('sidebar').classList.remove('open');
+
+        if (screenId === 'history') loadHistory();
+        if (screenId === 'regulations') loadRegulations();
+        if (screenId === 'account') loadAccount();
+    }
+
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+    }
+
+    function toggleLiContent() {
+        const val = document.getElementById('chemistry').value;
+        const group = document.getElementById('li-content-group');
+        if (val === 'li-metal') { group.classList.remove('hidden'); }
+        else { group.classList.add('hidden'); document.getElementById('li-content').value = ''; }
+    }
+
+    async function init() {
+        try {
+            currentUser = await api('/auth/me');
+            if (!currentUser) return;
+            document.getElementById('sidebar-email').textContent = currentUser.email;
+            document.getElementById('plan-badge').textContent = currentUser.plan.charAt(0).toUpperCase() + currentUser.plan.slice(1);
+
+            options = await api('/classify/options');
+            populateSelect('chemistry', options.battery_chemistries);
+            populateSelect('product-type', options.product_types);
+            populateRadios('transport-group', options.transport_modes, 'transport_mode', 'air');
+            populateRadios('packaging-group', options.packaging_configs, 'packaging_config', 'alone');
+        } catch (e) {
+            console.error(e);
+            signOut();
+        }
+    }
+
+    function populateSelect(id, items) {
+        const sel = document.getElementById(id);
+        items.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item.value;
+            opt.textContent = item.label;
+            sel.appendChild(opt);
+        });
+    }
+
+    function populateRadios(containerId, items, name, defaultValue) {
+        const container = document.getElementById(containerId);
+        items.forEach(item => {
+            const label = document.createElement('label');
+            label.className = 'radio-option';
+            const input = document.createElement('input');
+            input.type = 'radio';
+            input.name = name;
+            input.value = item.value;
+            if (item.value === defaultValue) input.checked = true;
+            const span = document.createElement('span');
+            span.textContent = item.label;
+            label.appendChild(input);
+            label.appendChild(span);
+            container.appendChild(label);
+            if (item.description) {
+                label.title = item.description;
+            }
+        });
+    }
+
+    async function handleClassify(e) {
+        e.preventDefault();
+        const btn = document.getElementById('classify-btn');
+        const spinner = document.getElementById('classify-spinner');
+        const text = document.getElementById('classify-btn-text');
+        const errorEl = document.getElementById('form-error');
+        errorEl.classList.add('hidden');
+        btn.disabled = true;
+        spinner.classList.remove('hidden');
+        text.textContent = 'Classifying...';
+
+        const chemistry = document.getElementById('chemistry').value;
+        const productType = document.getElementById('product-type').value;
+        const transportMode = document.querySelector('input[name="transport_mode"]:checked')?.value;
+        const packagingConfig = document.querySelector('input[name="packaging_config"]:checked')?.value;
+        const whRating = document.getElementById('wh-rating').value;
+        const liContent = document.getElementById('li-content').value;
+        const quantity = document.getElementById('quantity').value;
+
+        if (!chemistry || !productType || !transportMode || !packagingConfig) {
+            errorEl.textContent = 'Please fill in all required fields.';
+            errorEl.classList.remove('hidden');
+            btn.disabled = false;
+            spinner.classList.add('hidden');
+            text.textContent = 'Classify & Generate Documents →';
+            return;
+        }
+
+        try {
+            const data = await api('/classify/', 'POST', {
+                battery_chemistry: chemistry,
+                product_type: productType,
+                transport_mode: transportMode,
+                packaging_config: packagingConfig,
+                watt_hour_rating: whRating ? parseFloat(whRating) : null,
+                lithium_content_grams: liContent ? parseFloat(liContent) : null,
+                quantity: parseInt(quantity)
+            });
+            showResult(data);
+            document.getElementById('result-panel').scrollIntoView({ behavior: 'smooth' });
+        } catch (err) {
+            errorEl.textContent = err.message;
+            errorEl.classList.remove('hidden');
+        } finally {
+            btn.disabled = false;
+            spinner.classList.add('hidden');
+            text.textContent = 'Classify & Generate Documents →';
+        }
+    }
+
+    function showResult(data) {
+        currentShipmentId = data.shipment_id;
+        currentClassification = data;
+        const panel = document.getElementById('result-panel');
+        panel.classList.remove('hidden');
+        setTimeout(() => panel.classList.add('visible'), 10);
+
+        document.getElementById('res-un-number').textContent = data.un_number || '-';
+        document.getElementById('res-pi').textContent = data.packing_instruction || '-';
+        document.getElementById('res-section').textContent = data.section || 'N/A';
+        document.getElementById('res-hazard').textContent = data.hazard_class || '-';
+        document.getElementById('res-transport').textContent = data.transport_mode || '-';
+        document.getElementById('res-proper-name').textContent = data.proper_shipping_name || '-';
+
+        const declBadge = document.getElementById('badge-declaration');
+        declBadge.textContent = data.requires_shippers_declaration ? "✓ Shipper's Declaration Required" : "✓ No Declaration Required";
+        declBadge.className = 'badge ' + (data.requires_shippers_declaration ? 'badge-red' : 'badge-green');
+
+        const un38Badge = document.getElementById('badge-un38');
+        un38Badge.textContent = data.requires_un38_3 ? "✓ UN38.3 Required" : "✓ No UN38.3 Required";
+        un38Badge.className = 'badge ' + (data.requires_un38_3 ? 'badge-amber' : 'badge-green');
+
+        const confBadge = document.getElementById('badge-confidence');
+        const confMap = { high: 'badge-green', medium: 'badge-amber', low: 'badge-red' };
+        confBadge.textContent = (data.confidence || 'Unknown').charAt(0).toUpperCase() + (data.confidence || 'unknown').slice(1) + ' confidence';
+        confBadge.className = 'badge ' + (confMap[data.confidence] || 'badge-gray');
+
+        const reqBox = document.getElementById('res-requirements');
+        const reqList = document.getElementById('res-req-list');
+        reqList.innerHTML = '';
+        if (data.additional_requirements && data.additional_requirements.length > 0) {
+            reqBox.classList.remove('hidden');
+            data.additional_requirements.forEach(r => {
+                const li = document.createElement('li');
+                li.textContent = r;
+                reqList.appendChild(li);
+            });
+        } else {
+            reqBox.classList.add('hidden');
+        }
+
+        document.getElementById('explanation-panel').classList.add('hidden');
+    }
+
+    async function downloadPDF() {
+        if (!currentShipmentId) return;
+        const btn = document.getElementById('btn-download');
+        const spinner = document.getElementById('dl-spinner');
+        const text = document.getElementById('dl-text');
+        btn.disabled = true;
+        spinner.classList.remove('hidden');
+        text.textContent = 'Generating PDF...';
+
+        try {
+            const res = await fetch(`/api/documents/generate/${currentShipmentId}`, {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error('Failed to generate PDF');
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `batteryship_${currentShipmentId.slice(0,8)}.pdf`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            alert(err.message);
+        } finally {
+            btn.disabled = false;
+            spinner.classList.add('hidden');
+            text.textContent = 'Download Shipper\'s Declaration PDF';
+        }
+    }
+
+    async function fetchExplanation() {
+        if (!currentShipmentId) return;
+        const btn = document.getElementById('btn-explain');
+        const spinner = document.getElementById('ex-spinner');
+        const text = document.getElementById('ex-text');
+        btn.disabled = true;
+        spinner.classList.remove('hidden');
+        text.textContent = 'Loading...';
+
+        try {
+            const data = await api('/classify/explain', 'POST', { shipment_id: currentShipmentId });
+            const panel = document.getElementById('explanation-panel');
+            panel.classList.remove('hidden');
+            document.getElementById('ex-content').textContent = data.explanation;
+            document.getElementById('ex-meta').textContent = `Source: ${data.source}${data.model ? ' · ' + data.model : ''} · ${data.remaining_calls} calls remaining today`;
+            document.getElementById('followup-answer').textContent = '';
+            panel.scrollIntoView({ behavior: 'smooth' });
+        } catch (err) {
+            alert(err.message);
+        } finally {
+            btn.disabled = false;
+            spinner.classList.add('hidden');
+            text.textContent = 'Explain this in plain English';
+        }
+    }
+
+    async function askFollowup() {
+        const input = document.getElementById('followup-input');
+        const question = input.value.trim();
+        if (!question) return;
+        if (!currentShipmentId) return;
+
+        const answerEl = document.getElementById('followup-answer');
+        answerEl.textContent = 'Thinking...';
+
+        try {
+            const data = await api('/classify/explain', 'POST', { shipment_id: currentShipmentId, user_question: question });
+            answerEl.textContent = data.answer || data.explanation || 'No answer received.';
+        } catch (err) {
+            answerEl.textContent = err.message;
+        }
+    }
+
+    async function loadHistory() {
+        try {
+            const data = await api('/classify/history');
+            const tbody = document.getElementById('history-body');
+            tbody.innerHTML = '';
+            if (!data || data.length === 0) {
+                document.getElementById('history-empty').classList.remove('hidden');
+                document.getElementById('history-content').classList.add('hidden');
+                return;
+            }
+            document.getElementById('history-empty').classList.add('hidden');
+            document.getElementById('history-content').classList.remove('hidden');
+
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${formatDate(row.created_at)}</td>
+                    <td>${row.product_type || '-'}</td>
+                    <td>${row.battery_chemistry}</td>
+                    <td><strong>${row.un_number || '-'}</strong></td>
+                    <td>${row.transport_mode}</td>
+                    <td>${row.section || 'N/A'}</td>
+                    <td>${row.pdf_generated ? '<span class="badge badge-green">✓ Downloaded</span>' : '<span class="badge badge-gray">Not generated</span>'}</td>
+                    <td><button class="btn btn-sm btn-outline" onclick="downloadHistoryPDF('${row.id}')">Download PDF</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    async function downloadHistoryPDF(shipmentId) {
+        try {
+            const res = await fetch(`/api/documents/generate/${shipmentId}`, {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error('Failed to generate PDF');
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `batteryship_${shipmentId.slice(0,8)}.pdf`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            alert(err.message);
+        }
+    }
+
+    async function loadRegulations() {
+        try {
+            const data = await api('/documents/regulations');
+            const list = document.getElementById('reg-list');
+            list.innerHTML = '';
+            if (!data || data.length === 0) {
+                document.getElementById('reg-empty').classList.remove('hidden');
+                return;
+            }
+            document.getElementById('reg-empty').classList.add('hidden');
+            data.forEach(r => {
+                const card = document.createElement('div');
+                card.className = 'card reg-card';
+                card.innerHTML = `
+                    <div class="meta">
+                        <span class="badge badge-gray">${new Date(r.effective_date).toLocaleDateString()}</span>
+                        <span class="badge badge-blue">${r.source}</span>
+                    </div>
+                    <h3>${r.title}</h3>
+                    <p style="color:var(--gray-600);font-size:14px;">${r.body}</p>
+                `;
+                list.appendChild(card);
+            });
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    function loadAccount() {
+        if (!currentUser) return;
+        document.getElementById('acc-email').textContent = currentUser.email;
+        const planEl = document.getElementById('acc-plan');
+        planEl.textContent = currentUser.plan.charAt(0).toUpperCase() + currentUser.plan.slice(1);
+        const planColors = { free: 'badge-gray', starter: 'badge-blue', growth: 'badge-green' };
+        planEl.className = 'badge ' + (planColors[currentUser.plan] || 'badge-gray');
+
+        const limits = { free: 3, starter: 20, growth: 999999 };
+        const limit = limits[currentUser.plan] || 3;
+        const used = currentUser.docs_used_this_month;
+        document.getElementById('acc-usage').textContent = limit >= 999999 ? `${used} / ∞` : `${used} / ${limit}`;
+        const pct = limit >= 999999 ? 0 : Math.min((used / limit) * 100, 100);
+        document.getElementById('usage-bar').style.width = pct + '%';
+        document.getElementById('acc-since').textContent = formatDate(currentUser.created_at);
+
+        const upgradeCard = document.getElementById('upgrade-card');
+        if (currentUser.plan === 'free' || currentUser.plan === 'starter') {
+            upgradeCard.classList.remove('hidden');
+        } else {
+            upgradeCard.classList.add('hidden');
+        }
+    }
+
+    init();
+</script>
+
+</body>
+</html>
