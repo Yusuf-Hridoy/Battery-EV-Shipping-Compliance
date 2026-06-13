@@ -43,6 +43,17 @@ PLAN_LIMITS = {
 }
 
 
-def check_plan_limit(plan: str, docs_used: int) -> bool:
-    limit = PLAN_LIMITS.get(plan, 0)
-    return docs_used < limit
+def check_plan_limit(plan: str, docs_used: int, perdoc_credits: int = 0) -> dict:
+    limit = PLAN_LIMITS.get(plan, 3)
+
+    if docs_used < limit:
+        return {"allowed": True, "reason": "ok", "use_credit": False}
+
+    if perdoc_credits > 0:
+        return {"allowed": True, "reason": "use_credit", "use_credit": True}
+
+    return {
+        "allowed": False,
+        "reason": "limit_reached",
+        "use_credit": False,
+    }

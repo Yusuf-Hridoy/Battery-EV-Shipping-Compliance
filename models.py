@@ -19,6 +19,13 @@ class User(Base):
     docs_used_this_month = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    # Billing fields (Lemon Squeezy)
+    lemonsqueezy_customer_id = Column(String(100), nullable=True)
+    lemonsqueezy_subscription_id = Column(String(100), nullable=True)
+    subscription_status = Column(String(50), default="free")
+    current_period_end = Column(DateTime, nullable=True)
+    perdoc_credits = Column(Integer, default=0)
+
     shipments = relationship("Shipment", back_populates="user")
 
 

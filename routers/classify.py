@@ -11,11 +11,17 @@ from database import get_db
 from models import User, Shipment
 from schemas import ShipmentInput, ShipmentOut
 from services.classifier import classify
-from services.auth import check_plan_limit
+from services.auth import check_plan_limit, PLAN_LIMITS
 from services.gemini import explain_classification, check_edge_case
 from routers.auth import get_current_user
 
 router = APIRouter()
+
+
+def sanitize_string(value: Optional[str], max_length: int = 100) -> Optional[str]:
+    if not value:
+        return value
+    return str(value).strip()[:max_length]
 
 
 @router.post("/")
@@ -24,11 +30,27 @@ async def classify_shipment(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    allowed = check_plan_limit(current_user.plan, current_user.docs_used_this_month)
-    if not allowed:
+    # Sanitize string inputs
+    input.battery_chemistry = sanitize_string(input.battery_chemistry)
+    input.packaging_config = sanitize_string(input.packaging_config)
+    input.transport_mode = sanitize_string(input.transport_mode)
+    if input.product_type:
+        input.product_type = sanitize_string(input.product_type)
+
+    limit_check = check_plan_limit(
+        current_user.plan,
+        current_user.docs_used_this_month,
+        current_user.perdoc_credits,
+    )
+
+    if not limit_check["allowed"]:
         raise HTTPException(
             status_code=403,
-            detail=f"Monthly document limit reached for {current_user.plan} plan. Please upgrade to continue.",
+            detail={
+                "message": f"Monthly document limit reached for {current_user.plan} plan.",
+                "upgrade_url": "/api/billing/checkout/starter",
+                "perdoc_url": "/api/billing/checkout/perdoc",
+            },
         )
 
     try:
@@ -65,7 +87,10 @@ async def classify_shipment(
     )
     db.add(shipment)
 
-    current_user.docs_used_this_month += 1
+    if limit_check["use_credit"]:
+        current_user.perdoc_credits -= 1
+    else:
+        current_user.docs_used_this_month += 1
     db.add(current_user)
 
     await db.flush()

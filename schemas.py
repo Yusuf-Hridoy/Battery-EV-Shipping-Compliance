@@ -2,7 +2,7 @@ from datetime import datetime, date
 from typing import Optional, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
 
 
 # --- Auth schemas ---
@@ -22,6 +22,10 @@ class UserOut(BaseModel):
     plan: str
     docs_used_this_month: int
     created_at: datetime
+    lemonsqueezy_subscription_id: Optional[str] = None
+    subscription_status: str = "free"
+    current_period_end: Optional[datetime] = None
+    perdoc_credits: int = 0
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -39,6 +43,27 @@ class ShipmentInput(BaseModel):
     watt_hour_rating: Optional[float] = None
     lithium_content_grams: Optional[float] = None
     quantity: int = Field(..., ge=1, le=99999)
+
+    @field_validator("watt_hour_rating")
+    @classmethod
+    def validate_watt_hours(cls, v):
+        if v is not None and (v <= 0 or v >= 100000):
+            raise ValueError("Watt-hour rating must be between 0 and 100,000")
+        return v
+
+    @field_validator("lithium_content_grams")
+    @classmethod
+    def validate_lithium_content(cls, v):
+        if v is not None and (v <= 0 or v >= 10000):
+            raise ValueError("Lithium content must be between 0 and 10,000 grams")
+        return v
+
+    @field_validator("quantity")
+    @classmethod
+    def validate_quantity(cls, v):
+        if v < 1 or v > 99999:
+            raise ValueError("Quantity must be between 1 and 99,999")
+        return v
 
 
 class ClassificationResult(BaseModel):
@@ -67,6 +92,17 @@ class ShipmentOut(BaseModel):
     pdf_generated: bool
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
+
+
+# --- Billing schemas ---
+class BillingStatus(BaseModel):
+    plan: str
+    subscription_status: str
+    docs_used_this_month: int
+    docs_limit: int
+    perdoc_credits: int
+    current_period_end: Optional[datetime] = None
+    can_generate: bool
 
 
 # --- Regulation schemas ---
