@@ -39,13 +39,16 @@ Battery-EV-Shipping-Compliance/
 │   └── versions/           # Migration scripts
 ├── routers/                # HTTP route handlers
 │   ├── auth.py             # Registration, login, current user
+│   ├── billing.py          # Checkout, webhooks, subscription status
 │   ├── classify.py         # Classification, history, options, AI explain
 │   └── documents.py        # PDF generation, regulation updates
 ├── services/               # Core business logic
 │   ├── auth.py             # Password/JWT utilities and plan limits
+│   ├── billing.py          # Lemon Squeezy checkout and webhook handling
 │   ├── classifier.py       # UN classification engine
 │   ├── gemini.py           # Google Gemini AI integration
-│   └── pdf_generator.py    # Shipper's Declaration PDF generator
+│   ├── pdf_generator.py    # Shipper's Declaration PDF generator
+│   └── reset.py            # Monthly document counter reset job
 ├── static/                 # Frontend assets
 │   ├── index.html          # Landing page with auth modal
 │   ├── app.html            # Main application SPA
@@ -223,3 +226,9 @@ The current tests focus on the classification engine in `services/classifier.py`
 - Stripe is included as a dependency but not yet wired into the application.
 - AI rate limiting is stored in memory, so it resets when the server restarts.
 - The monthly document counter now resets automatically on the 1st of each month via APScheduler.
+
+## Recent fixes
+
+- **Database schema** — increased `shipments.packing_instruction` from `VARCHAR(20)` to `VARCHAR(100)` so long instructions like `"Refer to IATA DGR Special Provision A154"` can be stored. Applied via Alembic migration `2f7d639f6101`.
+- **Static file 404s** — missing static files (e.g. `favicon.ico`) now return a clean `404` instead of an unhandled `500` error.
+- **Gemini error handling** — quota/rate-limit errors from the Gemini API are logged server-side and no longer exposed to users. The UI receives a friendly fallback explanation instead.

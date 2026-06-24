@@ -1,7 +1,10 @@
+import logging
 import os
 from datetime import datetime, date
 
 import google.generativeai as genai
+
+logger = logging.getLogger("batteryship.gemini")
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_AVAILABLE = bool(GEMINI_API_KEY)
@@ -121,9 +124,11 @@ def explain_classification(classification: dict, user_id: str) -> dict:
             "model": MODEL_NAME,
         }
     except Exception as e:
+        logger.warning(f"Gemini explain_classification failed: {e}")
         fallback = _fallback_explain(classification)
-        fallback["explanation"] += f" (Gemini error: {str(e)})"
         fallback["remaining_calls"] = get_remaining_calls(user_id)
+        fallback["source"] = "fallback"
+        fallback["model"] = MODEL_NAME
         return fallback
 
 
@@ -183,9 +188,15 @@ def check_edge_case(user_question: str, classification: dict, user_id: str) -> d
             "model": MODEL_NAME,
         }
     except Exception as e:
+        logger.warning(f"Gemini check_edge_case failed: {e}")
         return {
-            "answer": f"Gemini API error: {str(e)}. Please consult a certified DG specialist.",
+            "answer": (
+                "AI assistance is temporarily unavailable. "
+                f"Your question: '{user_question}'. Current classification: "
+                f"{classification.get('un_number', '')}. "
+                "Please consult a certified DG specialist for edge case questions."
+            ),
             "remaining_calls": get_remaining_calls(user_id),
-            "source": "error",
+            "source": "fallback",
             "model": MODEL_NAME,
         }

@@ -42,7 +42,7 @@ class Shipment(Base):
     lithium_content_grams = Column(Float, nullable=True)
     quantity = Column(Integer, nullable=False)
     un_number = Column(String(20), nullable=True)
-    packing_instruction = Column(String(20), nullable=True)
+    packing_instruction = Column(String(100), nullable=True)
     section = Column(String(5), nullable=True)
     requires_shippers_declaration = Column(Boolean, default=False)
     requires_un38_3 = Column(Boolean, default=False)

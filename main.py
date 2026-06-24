@@ -4,9 +4,9 @@ import traceback
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -84,15 +84,15 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 @app.exception_handler(404)
-async def not_found_handler(request: Request, exc):
+async def not_found_handler(request: Request, exc: HTTPException):
     # Only return JSON for API routes, not static file 404s
     if request.url.path.startswith("/api"):
         return JSONResponse(
             status_code=404,
             content={"detail": f"Endpoint {request.url.path} not found"}
         )
-    # For non-API 404s let FastAPI handle normally
-    raise exc
+    # For non-API 404s return a clean 404 response
+    return Response(status_code=404)
 
 
 @app.get("/health", tags=["system"])
